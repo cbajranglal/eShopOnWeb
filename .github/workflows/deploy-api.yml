@@ -1,0 +1,37 @@
+
+name: Deploy Public API
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/PublicApi/**'
+      - '.github/workflows/deploy-api.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore src/PublicApi/PublicApi.csproj
+
+      - name: Build
+        run: dotnet build src/PublicApi/PublicApi.csproj --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish src/PublicApi/PublicApi.csproj -c Release -o ./publish
+
+      - name: Deploy to Azure Web App (API)
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: eshoponweb-api
+          slot-name: production
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_API }}
+          package: ./publish
